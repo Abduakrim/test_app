@@ -54,7 +54,7 @@ Each feature is self-contained with its own data and presentation logic.
 
 1. Clone the repository:
    ```bash
-   git clone <your-repository-url>
+   git clone https://github.com/Abduakrim/test_app.git
    ```
 
 2. Navigate into the project directory:
