@@ -140,13 +140,7 @@ class EmployeesNotifier extends AsyncNotifier<List<EmployeeModel>> {
   }
 
   Future<void> refresh() async {
-    _skip = 0;
-    _hasMore = true;
-    _isLoadingMore = false;
-    _searchQuery = '';
-    _currentFilter = const EmployeeFilter();
-    _allFetchedUsers = [];
-
+    state = AsyncLoading();
     ref.invalidateSelf();
     await future;
   }
