@@ -4,17 +4,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:test_app/src/core/widgets/app_drawer.dart';
 import 'package:test_app/src/core/widgets/app_empty_state_widget.dart';
 import 'package:test_app/src/core/widgets/app_error_widget.dart';
 import 'package:test_app/src/core/widgets/no_internet_widget.dart';
 import 'package:test_app/src/core/widgets/shimmer_list.dart';
-import 'package:test_app/src/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:test_app/src/features/favorite/presentation/provider/favorites_provider.dart';
 import 'package:test_app/src/features/home/presentation/providers/employee_notifier.dart';
 import 'package:test_app/src/features/home/presentation/widgets/employee_list_tile.dart';
 import 'package:test_app/src/features/home/presentation/widgets/filter_bottom_sheet.dart';
-import 'package:test_app/src/features/home/presentation/widgets/localization_tile.dart';
-import 'package:test_app/src/features/home/presentation/widgets/theme_switch_tile.dart';
 
 class EmployeeListScreen extends ConsumerStatefulWidget {
   const EmployeeListScreen({super.key});
@@ -67,9 +65,12 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
   @override
   Widget build(BuildContext context) {
     final employeesAsync = ref.watch(employeesProvider);
-    final notifier = ref.watch(employeesProvider.notifier);
     final favoriteUsers = ref.watch(favoritesProvider);
+    final notifier = ref.read(employeesProvider.notifier);
+    
+    final favoriteIds = favoriteUsers.map((e) => e.id).toSet();
     final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: Padding(
@@ -108,60 +109,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
       ),
-      drawer: Drawer(
-        backgroundColor: colors.surface,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              DrawerHeader(
-                decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(15),
-                        topRight: Radius.circular(15))),
-                child: Text(
-                  'menu'.tr(),
-                  style: const TextStyle(color: Colors.white, fontSize: 24),
-                ),
-              ),
-              ListTile(
-                leading:
-                    const Icon(Icons.favorite_rounded, color: Colors.redAccent),
-                title: Text(
-                  'favorites'.tr(),
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w500),
-                ),
-                onTap: () {
-                  context.pop();
-                  context.push('/favourite');
-                },
-              ),
-              const Divider(),
-              ThemeSwitchTile(),
-              const Divider(),
-              LocalizationTile(),
-              Spacer(),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.redAccent),
-                title: Text(
-                  'logout'.tr(),
-                  style: const TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                onTap: () {
-                  ref.read(authNotifierProvider.notifier).logout();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+      drawer: const AppDrawer(),
       body: employeesAsync.when(
         loading: () => const ShimmerList(),
         error: (err, stack) {
@@ -172,12 +120,6 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
             if (err.type == DioExceptionType.connectionError ||
                 err.type == DioExceptionType.connectionTimeout) {
               return NoInternetWidget(onRetry: onRetry);
-            }
-            if (err.response?.statusCode == 401) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ref.read(authNotifierProvider.notifier).logout();
-              });
-              return const ShimmerList();
             }
           }
 
@@ -211,8 +153,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
               itemBuilder: (context, index) {
                 if (index < users.length) {
                   final user = users[index];
-
-                  final isFav = favoriteUsers.any((e) => e.id == user.id);
+                  final isFav = favoriteIds.contains(user.id);
 
                   return InkWell(
                     borderRadius: BorderRadius.circular(16),
